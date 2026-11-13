@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Твой день ❤️</title>
+<style>
+:root{--bg1:#2a0a24;--bg2:#6b1d4f;--text:#fff3f7;--accent:#ff5c8a;--card:rgba(255,255,255,.14);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0}
+body{background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--text);font-family:Georgia,'Times New Roman',serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px;overflow-y:auto}
+h1{font-size:1.9rem;margin:0;line-height:1.2}
+p{margin:0;font-size:1.1rem;line-height:1.4;max-width:420px}
+input{font:inherit;font-size:1.1rem;padding:12px 16px;border-radius:14px;border:2px solid var(--accent);background:var(--card);color:var(--text);text-align:center;outline:none;width:min(280px,80%)}
+input::placeholder{color:rgba(255,243,247,.6)}
+button{font:inherit;font-size:1.05rem;padding:12px 24px;border:0;border-radius:999px;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 6px 20px rgba(255,92,138,.45)}
+.opt{display:block;width:min(320px,100%);margin:6px auto;background:var(--card);box-shadow:none;border:1px solid rgba(255,255,255,.3);border-radius:16px}
+.opt.bad{background:rgba(255,60,60,.35)}
+.opt.ok{background:rgba(80,200,120,.5)}
+.tag{font-size:.9rem;opacity:.75;letter-spacing:.08em;text-transform:uppercase}
+.fb{min-height:3em;color:#ffd1e0;font-style:italic}
+.big{font-size:3.5rem;animation:beat 1.2s infinite}
+@keyframes beat{50%{transform:scale(1.15)}}
+#hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:0;right:0;text-align:center;z-index:5;pointer-events:none}
+#bar{width:200px;height:8px;border-radius:8px;background:var(--card);margin:8px auto 0;overflow:hidden}
+#fill{height:100%;width:0;background:var(--accent);transition:width .3s}
+#msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(60,10,45,.85);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:20px 24px;width:min(320px,80%);text-align:center;font-size:1.3rem;opacity:0;transition:all .4s;z-index:6;pointer-events:none}
+#msg.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.h{position:fixed;top:-60px;font-size:44px;cursor:pointer;animation:fall linear forwards;z-index:3;padding:8px}
+@keyframes fall{to{transform:translateY(115vh) rotate(25deg)}}
+.pop{animation:pop .4s forwards!important}
+@keyframes pop{to{transform:scale(2);opacity:0}}
+.c{position:fixed;top:-40px;font-size:28px;animation:fall linear forwards;pointer-events:none;z-index:2}
+.grid{display:grid;grid-template-columns:repeat(4,64px);gap:10px;justify-content:center}
+.card{height:64px;font-size:30px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:var(--accent);cursor:pointer;color:transparent;transition:transform .2s}
+.card.up{background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,.4)}
+.card.done{background:rgba(80,200,120,.45);color:var(--text)}
+.mz{display:grid;grid-template-columns:repeat(9,34px);gap:2px;touch-action:none}.mc,.mw{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px}.mc{background:rgba(255,255,255,.12)}.mw{background:#4a1238}.pad{display:flex;gap:8px;justify-content:center}.pd{width:56px;padding:10px 0;font-size:1.3rem}.ins{font-size:1.3rem;font-style:italic;line-height:1.6}
+.cwg{display:flex;flex-direction:column;gap:3px}.cwr{display:flex;gap:2px}.cs{width:34px;flex:none}.ci,.ck{width:34px;height:38px;padding:0;font-size:1.2rem;border-radius:8px;text-transform:uppercase;flex:none}.ck{background:rgba(255,92,138,.45)}.ci.ok,.ck.ok{background:rgba(80,200,120,.55)}.clues{text-align:left;font-size:.95rem;line-height:1.5;max-width:340px}
+.map{position:relative;width:300px;height:300px;border-radius:18px;background:linear-gradient(135deg,#f3dca3,#e0b96a);box-shadow:0 6px 20px rgba(0,0,0,.4);flex:none}.mk,.ma,.ml{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;font-size:30px;text-align:center;line-height:40px}.ml{opacity:.3}.ma{cursor:pointer;animation:beat 1s infinite}.dt{position:absolute;width:5px;height:5px;border-radius:50%;background:#8a5a2b;margin:-2px 0 0 -2px}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hud" style="display:none">Поймано: <span id="n">0</span> / 9<div id="bar"><div id="fill"></div></div></div>
+<div id="msg"></div>
+
+<script>
+var $=function(i){return document.getElementById(i)},name="",lvl=0,timer=null;
+var hearts=["❤️","💖","💗","💘","💕"];
+
+var logic=[
+{q:"Продолжи ряд: 2, 6, 12, 20, … ?",o:["28","30","32"],a:1,f:"Разности растут: +4, +6, +8, +10. Ты умница! 🧠"},
+{q:"1, 1, 2, 3, 5, 8, … ?",o:["11","12","13"],a:2,f:"Фибоначчи — каждое число сумма двух предыдущих, как мы с тобой: вместе больше, чем по отдельности 💞"},
+{q:"Все, кто влюблён в тебя, счастливы. Я влюблён в тебя. Значит, я…",o:["Счастлив","Грущу","Нельзя сказать"],a:0,f:"Железная логика. Q.E.D. 😏"},
+{q:"У меня есть 3 сердечка. Одно я отдал тебе. Сколько их осталось у меня?",o:["2","1","Ни одного — ты забрала всё"],a:2,f:"Верный ответ. Математика здесь бессильна 😌"}
+];
+var doc=[
+{q:"Пациентка жалуется: сердце бьётся чаще при виде одного человека. Диагноз?",o:["Тахикардия","Острая влюблённость","Переутомление"],a:1,f:"Диагноз подтверждён. Хронический, неизлечимый и взаимный 😉"},
+{q:"Лучшее лекарство от плохого дня по моему рецепту?",o:["Аспирин","Сон","Объятия, 3 раза в день"],a:2,f:"Дозировку лечащий врач уточнит лично 🤗"},
+{q:"У пациентки симптом: невозможно не улыбаться при чтении моих сообщений. Это…",o:["Побочный эффект любви","Аллергия","Вирус"],a:0,f:"Побочных эффектов не боюсь — они мне очень нравятся 😊"},
+{q:"Какой витамин самый нужный мне?",o:["Витамин C","Витамин D","Витамин Ты"],a:2,f:"Принимать ежедневно, желательно рядом ❤️"}
+];
+var facts=["Ты делаешь мои дни светлее ✨","С тобой даже обычный вечер — праздник 🥂","Рядом с тобой я становлюсь лучше 🌷","Твоя улыбка — моё любимое место на свете 😊"];
+var books=[
+{q:"«Я вас любил: любовь ещё, быть может, в душе моей угасла не совсем…» Кто автор?",o:["Лермонтов","Пушкин","Есенин"],a:1,f:"Пушкин, 1829 год. А я люблю тебя без «был» — в настоящем времени 😏"},
+{q:"«Шёпот, робкое дыханье, трели соловья…» Чьи строки?",o:["Некрасов","Тютчев","Фет"],a:2,f:"Афанасий Фет. А у меня рядом с тобой дыхание ещё и сбивается 🙈"},
+{q:"«Кто сказал тебе, что нет на свете настоящей, верной, вечной любви?» Из какой книги?",o:["«Мастер и Маргарита»","«Преступление и наказание»","«Евгений Онегин»"],a:0,f:"Булгаков. Я верю в это — потому что нашёл тебя ❤️"}
+];
+var L=[
+{t:"Стихи для тебя",x:"Ты — мой любимый вечер и рассвет,\nМой тихий дом, где мне всегда тепло.\nДругой такой на целом свете нет —\nМне просто в жизни с тобой повезло."},
+{t:"Пушкин (и немного я)",x:"«Я помню чудное мгновенье:\nПередо мной явилась ты».\n\nА я помню каждое мгновенье с тобой — и хочу ещё тысячи."},
+{t:"Тютчев — и это про нас",x:"«Любовь, любовь — гласит преданье —\nСоюз души с душой родной».\n\nЯ нашёл свою родную душу. Это ты."},
+{t:"Признание",x:"Я не всегда умею сказать это вслух, но ты — самое тёплое, что есть в моей жизни. С тобой я дома, где бы мы ни были."},
+{t:"Ещё стихи",x:"Не нужно слов, не нужно громких фраз —\nМне хватит взгляда, голоса и рук.\nЯ каждый день люблю тебя, как в первый раз,\nИ ты — мой самый близкий в мире друг."},
+{t:"Моя клятва",x:"Обещаю быть рядом, смеяться вместе с тобой, заботиться о тебе и никогда не забывать, как мне повезло тебя встретить."}
+];
+
+function R(h){$("stage").innerHTML=h}
+function intro(){
+ R('<div class="big">💝</div><h1>Сегодня — твой день</h1><p>Я сам назначил его твоим праздником. Для тебя — игра из 9 уровней: сердечки, логика, приём у доктора, литература, письма, лабиринт, кроссворд, карта сокровищ и мемори. Вход только для одной особенной женщины — представься, чтобы войти.</p><input id="name" placeholder="Кто ты?" maxlength="40"><div class="fb" id="er" style="min-height:1.5em"></div><button id="go">Войти</button>');
+ $("go").onclick=function(){
+  var v=$("name").value.trim().toLowerCase().replace(/\s+/g," ");
+  if(v==="женщина умара"){name="женщина Умара";lvl=0;next()}
+  else $("er").textContent="Эта игра только для одной женщины 🙈 Попробуй ещё раз";
+ };
+ $("name").onkeydown=function(e){if(e.key==="Enter")$("go").click()};
+}
+function next(){
+ var s=[hearts_lvl,function(){quiz("Уровень 2 · Логика",logic,next)},function(){quiz("Уровень 3 · Приём у доктора Любви 🩺",doc,next)},function(){quiz("Уровень 4 · Литература 📚",books,next)},letters,maze,cross,treasure,memory,finale];
+ s[lvl++]();
+}
+function banner(t,sub,cb){
+ R('<div class="tag">'+t+'</div><p>'+sub+'</p><button id="ok">Погнали</button>');$("ok").onclick=cb;
+}
+
+/* level 1 */
+function hearts_lvl(){
+ banner("Уровень 1 · Сердечки","Лови сердечки — за некоторые тебя ждёт признание.",function(){
+  R("");var n=0;
+  $("hud").style.display="block";$("n").textContent=0;$("fill").style.width="0";
+  timer=setInterval(function(){
+   var h=document.createElement("div");h.className="h";h.textContent=hearts[Math.floor(Math.random()*5)];
+   h.style.left=(Math.random()*80+5)+"%";h.style.animationDuration=(4+Math.random()*2.5)+"s";
+   h.addEventListener("pointerdown",function(e){
+    e.preventDefault();if(h.dataset.c)return;h.dataset.c=1;h.classList.add("pop");
+    setTimeout(function(){h.remove()},400);
+    n++;$("n").textContent=n;$("fill").style.width=(n/9*100)+"%";
+    if(n%2===0&&n<9)toast(facts[n/2-1]);
+    if(n>=9){clearInterval(timer);document.querySelectorAll(".h").forEach(function(x){x.remove()});
+     $("hud").style.display="none";toast("Я так счастлив, что ты есть 💞");setTimeout(next,2400)}
+   });
+   h.addEventListener("animationend",function(){h.remove()});
+   document.body.appendChild(h);
+  },750);
+ });
+}
+function toast(t){var m=$("msg");m.textContent=t;m.classList.add("show");setTimeout(function(){m.classList.remove("show")},2200)}
+
+/* levels 2 and 3: quiz */
+function quiz(title,list,done){
+ var i=0;
+ function show(){
+  var q=list[i],h='<div class="tag">'+title+' · '+(i+1)+'/'+list.length+'</div><h1 style="font-size:1.35rem">'+q.q+'</h1>';
+  q.o.forEach(function(o,k){h+='<button class="opt" data-k="'+k+'">'+o+'</button>'});
+  h+='<div class="fb" id="fb"></div>';R(h);
+  var locked=false;
+  document.querySelectorAll(".opt").forEach(function(b){b.onclick=function(){
+   if(locked)return;var k=+b.dataset.k;
+   if(k===q.a){locked=true;b.classList.add("ok");$("fb").textContent=q.f;
+    setTimeout(function(){i++;i<list.length?show():done()},2600)}
+   else{b.classList.add("bad");$("fb").textContent="Почти! Подумай ещё 😉"}
+  }});
+ }
+ banner(title,"Отвечай внимательно — а то вызову на повторный приём 😏",show);
+}
+
+/* level 4: memory */
+function memory(){
+ banner("Уровень 9 · Мемори","Найди все пары.",function(){
+  var e=["❤️","🩺","💊","🧬","❤️","🩺","💊","🧬"].sort(function(){return Math.random()-.5});
+  var h='<div class="tag">Уровень 9 · Мемори</div><div class="grid">';
+  e.forEach(function(x,k){h+='<div class="card" data-k="'+k+'">'+x+'</div>'});
+  R(h+'</div><div class="fb" id="fb"></div>');
+  var open=[],found=0,busy=false,c=document.querySelectorAll(".card");
+  c.forEach(function(el){el.onclick=function(){
+   if(busy||el.classList.contains("up")||el.classList.contains("done"))return;
+   el.classList.add("up");open.push(el);
+   if(open.length===2){busy=true;
+    if(open[0].textContent===open[1].textContent){
+     open.forEach(function(x){x.classList.remove("up");x.classList.add("done")});open=[];busy=false;found++;
+     if(found===4){$("fb").textContent="Все пары найдены — как и мы с тобой 💑";setTimeout(next,2400)}
+    }else setTimeout(function(){open.forEach(function(x){x.classList.remove("up")});open=[];busy=false},700);
+   }
+  }});
+ });
+}
+
+/* level 5: letters */
+function letters(){
+ var opened={},cnt=0;
+ function grid(){
+  var h='<div class="tag">Уровень 5 · Конверты любви</div><p>Открой все конверты 💌</p><div class="grid" style="grid-template-columns:repeat(3,80px)">';
+  L.forEach(function(x,k){h+='<div class="card'+(opened[k]?' done':'')+'" data-k="'+k+'" style="height:80px;font-size:38px;color:inherit">💌</div>'});
+  h+='</div>';
+  if(cnt===L.length)h+='<button id="nx">Дальше</button>';
+  R(h);
+  document.querySelectorAll(".card").forEach(function(c){c.onclick=function(){read(+c.dataset.k)}});
+  if(cnt===L.length)$("nx").onclick=next;
+ }
+ function read(k){
+  if(!opened[k]){opened[k]=1;cnt++}
+  R('<div class="tag">'+L[k].t+'</div><p style="white-space:pre-line;font-size:1.25rem;line-height:1.6">'+L[k].x+'</p><button id="b">Закрыть конверт</button>');
+  $("b").onclick=grid;
+ }
+ banner("Уровень 5 · Конверты любви","Здесь спрятаны письма, стихи и строки великих — но каждая про тебя.",grid);
+}
+
+/* level 6: maze */
+var MZ=['#########','#S..#...#','#.#.#.#.#','#.#...#.#','#.#####.#','#...^...#','###.###.#','#.....#G#','#########'];
+function maze(){
+ banner('Уровень 6 · Лабиринт','Доведи нас до рассвета. Стены не пройти, колючки 🌵 вернут на старт. Свайпай по полю или жми стрелки.',function(){
+  var pr=1,pc=1,done=false;
+  function draw(msg){
+   var h='<div class=tag>Уровень 6 · Лабиринт</div><div class=mz>';
+   for(var r=0;r<9;r++)for(var c=0;c<9;c++){var ch=MZ[r][c],t='';if(ch==='G')t='🌅';if(ch==='^')t='🌵';if(r===pr&&c===pc)t='🚶';h+='<div class='+(ch==='#'?'mw':'mc')+'>'+t+'</div>'}
+   h+='</div><div class=pad><button class=pd data-m=u>↑</button></div><div class=pad><button class=pd data-m=l>←</button><button class=pd data-m=d>↓</button><button class=pd data-m=r>→</button></div><div class=fb id=fb>'+(msg||'')+'</div>';
+   R(h);
+   document.querySelectorAll('.pd').forEach(function(b){b.onclick=function(){go(b.dataset.m)}});
+   var z=document.querySelector('.mz'),sx=0,sy=0;
+   z.ontouchstart=function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY};
+   z.ontouchend=function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;go(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u'))};
+  }
+  function go(m){
+   if(done)return;
+   var nr=pr+(m==='d')-(m==='u'),nc=pc+(m==='r')-(m==='l'),ch=MZ[nr][nc];
+   if(ch==='#')return;
+   if(ch==='^'){pr=1;pc=1;draw('Колючки! Возвращаемся к началу — но мы всё равно вместе 😄');return}
+   pr=nr;pc=nc;
+   if(ch==='G'){done=true;document.onkeydown=null;R('<div class=big>🌅</div><p class=ins>«На нашем пути в гору дорога будет извилистой, но лишь так понимаешь ценность рассветов и закатов. Спасибо, что идёшь этой дорогой рядом со мной.»</p><button id=nx>Дальше</button>');$('nx').onclick=next;return}
+   draw();
+  }
+  document.onkeydown=function(e){var m={ArrowUp:'u',ArrowDown:'d',ArrowLeft:'l',ArrowRight:'r'}[e.key];if(m){e.preventDefault();go(m)}};
+  draw();
+ });
+}
+
+/* level 7: crossword */
+var CW=[['ЛУНА',0,'Освещает нашу ночную прогулку'],['ЛЮБИМАЯ',1,'Ты для меня самая ...'],['БУКЕТ',0,'Цветы, которые дарят любимым'],['ПОЦЕЛУЙ',1,'Нежное прикосновение губ'],['ВМЕСТЕ',0,'Главное слово про нас с тобой'],['ДЕНЬ',3,'Сегодня твой ...']];
+function cross(){
+ banner('Уровень 7 · Кроссворд','Впиши слова. Подсвеченный столбец сложится в ключевое слово — самое главное.',function(){
+  var h='<div class=tag>Уровень 7 · Кроссворд</div><div class=cwg>';
+  CW.forEach(function(w,i){h+='<div class=cwr>';for(var s=0;s<3-w[1];s++)h+='<span class=cs></span>';for(var j=0;j<w[0].length;j++)h+='<input class='+(j===w[1]?'ck':'ci')+' maxlength=1 data-i='+i+' data-j='+j+(j===0?' placeholder='+(i+1):'')+'>';h+='</div>'});
+  h+='</div><div class=clues>'+CW.map(function(w,i){return (i+1)+'. '+w[2]+' ('+w[0].length+')'}).join('<br>')+'</div><div class=fb id=fb></div><button id=chk>Проверить</button>';
+  R(h);
+  var ins=document.querySelectorAll('.ci,.ck');
+  ins.forEach(function(el){el.oninput=function(){el.value=el.value.toUpperCase();var n=el.nextElementSibling;if(el.value&&n&&n.tagName==='INPUT')n.focus()}});
+  $('chk').onclick=function(){var all=true;
+   ins.forEach(function(el){var ok=el.value.toUpperCase()===CW[+el.dataset.i][0][+el.dataset.j];el.classList.toggle('ok',ok);if(!ok)all=false});
+   if(all){$('fb').textContent='Ключевое слово — ЛЮБОВЬ ❤️';$('chk').textContent='Дальше';$('chk').onclick=next}
+   else $('fb').textContent='Есть ошибки — подумай ещё 😉'};
+ });
+}
+
+/* level 8: treasure map */
+var TM=[[30,80,'🌴','Старт: день, когда я встретил тебя. Лучшая карта в моей жизни началась именно здесь.'],[36,47,'🏔️','Гора трудностей. Будет непросто — зато вместе мы справимся с любой вершиной.'],[70,67,'🌊','Море нежности. В нём я готов тонуть — только вместе с тобой.'],[80,20,'❌','Сокровище найдено! Это ты — самое ценное, что у меня есть. А настоящий подарок ждёт тебя лично 🎁']];
+function treasure(){
+ banner('Уровень 8 · Карта сокровищ','Иди по тропе от места к месту. В конце тебя ждёт главное сокровище.',function(){
+  var k=0;
+  function draw(t){
+   var h='<div class=tag>Уровень 8 · Карта сокровищ</div><div class=map>';
+   for(var i=0;i<TM.length-1;i++)for(var s=1;s<7;s++)h+='<i class=dt style=left:'+(TM[i][0]+(TM[i+1][0]-TM[i][0])*s/7)+'%;top:'+(TM[i][1]+(TM[i+1][1]-TM[i][1])*s/7)+'%></i>';
+   TM.forEach(function(p,i){h+='<div class='+(i<k?'mk':i===k?'ma':'ml')+' style=left:'+p[0]+'%;top:'+p[1]+'%>'+p[2]+'</div>'});
+   h+='</div><p>'+(t||'Нажми на мерцающее место на карте')+'</p>'+(k>=TM.length?'<button id=nx>Дальше</button>':'');
+   R(h);
+   document.querySelectorAll('.ma').forEach(function(m){m.onclick=function(){var t=TM[k][3];k++;draw(t)}});
+   if(k>=TM.length)$('nx').onclick=next;
+  }
+  draw();
+ });
+}
+
+/* finale */
+function finale(){
+ R('<div class="big">🎉</div><h1 id="t"></h1><p>Это твой день — потому что я так решил, и потому что ты особенная для меня в каждый день года. Пусть сегодня всё будет только для тебя: тепло, радость и любовь.</p><p style="font-style:italic">Ты — мой любимый вечер и рассвет,<br>Мой тихий дом, где мне всегда тепло.<br>Другой такой на целом свете нет —<br>Мне просто в жизни с тобой повезло.</p><p style="font-size:1.3rem">Рецепт на всю жизнь:<br>«Любить без перерыва» 🩺❤️</p><p style="font-size:1.5rem;color:var(--accent)">Я люблю тебя</p><button id="r">Сыграть ещё раз</button>');
+ $("t").textContent="С твоим днём, моя единственная!";
+ $("r").onclick=intro;
+ var e=["🎉","🎈","💖","✨","🌸","🎊"];
+ for(var i=0;i<40;i++)(function(i){setTimeout(function(){
+  var c=document.createElement("div");c.className="c";c.textContent=e[i%6];
+  c.style.left=Math.random()*95+"%";c.style.animationDuration=(3+Math.random()*3)+"s";
+  c.addEventListener("animationend",function(){c.remove()});document.body.appendChild(c);
+ },i*120)})(i);
+}
+intro();
+</script>
+</body>
+</html>
